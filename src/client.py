@@ -1,14 +1,12 @@
 #!/usr/bin/env python
-import sys
-import time
+import os
 from pathlib import Path
-import random
 
-import requests as requests
+import requests
+
+import typer
 import paramiko
 from getpass import getpass
-import typer
-import os
 
 app = typer.Typer()
 SERVER_URL = "http://127.0.0.1:8000"
