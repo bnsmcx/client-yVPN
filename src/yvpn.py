@@ -1,4 +1,8 @@
+#! /usr/bin/env python3
+
 import os
+import socket
+import sys
 import time
 from pathlib import Path
 
@@ -22,9 +26,9 @@ def create(token: str, ssh_pub_key_path: str, region: str = 'random'):
     print("Asking the server to create the endpoint, this could take a minute.")
     header = {"token": f"{token}"}
     response = requests.post(url=f"{SERVER_URL}/create",
-                              json={'region': f'{region}',
-                                    'ssh_pub_key': f'{get_ssh_pubkey(ssh_pub_key_path)}'},
-                              headers=header)
+                             json={'region': f'{region}',
+                                   'ssh_pub_key': f'{get_ssh_pubkey(ssh_pub_key_path)}'},
+                             headers=header)
 
     if response.status_code != 200:
         print(f"There was a problem:\n {response.json()}")
@@ -81,9 +85,26 @@ def status(token: str):
     print(status)
 
 
+def endpoint_server_up(server_ip: str) -> bool:
+    connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        connection.connect((server_ip, 22))
+        connection.shutdown(2)
+        return True
+    except Exception as e:
+        return False
+
+
 def server_key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) -> str:
     # create ssh client and connect
-    print("VPN endpoint created, performing key exchange (up to a minute)...")
+    spinner = spinning_cursor()
+    while not endpoint_server_up(server_ip):
+        message = f"Waiting for server to come up...{next(spinner)}"
+        sys.stdout.write(message)
+        sys.stdout.flush()
+        time.sleep(1)
+        sys.stdout.write('\b' * len(message))
+
     ssh_key = ssh_pubkey_path.replace(".pub", "")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -92,7 +113,9 @@ def server_key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) ->
         ssh.connect(server_ip, username="root",
                     key_filename=ssh_key,
                     look_for_keys=False,
-                    banner_timeout=60)
+                    banner_timeout=60,
+                    timeout=60,
+                    auth_timeout=60)
 
         # activate client on server
         print("Performing key exchange with new VPN endpoint ...")
@@ -161,7 +184,7 @@ def get_datacenter_regions(token: str) -> list:
     print("Getting a list of available datacenters ...")
     header = {"token": f"{token}"}
     regions = requests.get(url=f"{SERVER_URL}/datacenters",
-                               headers=header).json()["available"]
+                           headers=header).json()["available"]
 
     return regions
 
