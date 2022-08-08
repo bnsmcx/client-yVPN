@@ -2,7 +2,6 @@
 
 import os
 import socket
-import sys
 import time
 from pathlib import Path
 
@@ -10,6 +9,7 @@ import requests
 
 import typer
 import paramiko
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 app = typer.Typer()
 SERVER_URL = "http://127.0.0.1:8000"
@@ -19,7 +19,7 @@ def get_user_token() -> str:
     try:
         return os.environ['TOKEN_yVPN']
     except KeyError:
-        token = input("Enter token: ")
+        token = typer.prompt("Enter token")
         print("Set the 'TOKEN_yVPN' environment variable to skip this in the future.")
         return token
 
@@ -32,12 +32,13 @@ def get_ssh_pubkey(ssh_pub_key_path: str) -> str:
 def create(ssh_pub_key_path: str, region: str = 'random'):
     """CREATE a new VPN endpoint"""
 
-    print("Creating the endpoint, this could take a minute.")
-    header = {"token": f"{TOKEN}"}
-    response = requests.post(url=f"{SERVER_URL}/create",
-                             json={'region': f'{region}',
-                                   'ssh_pub_key': f'{get_ssh_pubkey(ssh_pub_key_path)}'},
-                             headers=header)
+    with get_spinner() as spinner:
+        spinner.add_task("Creating the endpoint, this could take a minute.")
+        header = {"token": f"{TOKEN}"}
+        response = requests.post(url=f"{SERVER_URL}/create",
+                                 json={'region': f'{region}',
+                                       'ssh_pub_key': f'{get_ssh_pubkey(ssh_pub_key_path)}'},
+                                 headers=header)
 
     if response.status_code != 200:
         print(f"There was a problem:\n {response.json()}")
@@ -104,30 +105,35 @@ def endpoint_server_up(server_ip: str) -> bool:
         return False
 
 
+def get_spinner():
+    spinner = Progress(SpinnerColumn(),
+                       TextColumn("{task.description}[progress.description]"),
+                       transient=False)
+    return spinner
+
+
 def server_key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) -> str:
     # create ssh client and connect
-    spinner = spinning_cursor()
-    while not endpoint_server_up(server_ip):
-        message = f"Waiting for server to come up...{next(spinner)}"
-        sys.stdout.write(message)
-        sys.stdout.flush()
-        time.sleep(1)
-        sys.stdout.write('\b' * len(message))
+    with get_spinner() as spinner:
+        spinner.add_task("Waiting for server to come up...")
+        while not endpoint_server_up(server_ip):
+            time.sleep(1)
 
     ssh_key = ssh_pubkey_path.replace(".pub", "")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        ssh.connect(server_ip, username="root",
-                    key_filename=ssh_key,
-                    look_for_keys=False,
-                    banner_timeout=60,
-                    timeout=60,
-                    auth_timeout=60)
+        with get_spinner() as spinner:
+            spinner.add_task("Performing key exchange with new VPN endpoint ...")
+            ssh.connect(server_ip, username="root",
+                        key_filename=ssh_key,
+                        look_for_keys=False,
+                        banner_timeout=60,
+                        timeout=60,
+                        auth_timeout=60)
 
         # activate client on server
-        print("Performing key exchange with new VPN endpoint ...")
         client_public_key = Path("/etc/wireguard/public.key").read_text().strip()
         command = f"wg set wg0 peer {client_public_key} allowed-ips {client_ip}"
         ssh.exec_command(command)
