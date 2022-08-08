@@ -85,6 +85,9 @@ def disconnect():
 def destroy(endpoint_name: str):
     """permanently DESTROY your endpoint"""
 
+    # disconnect first
+    disconnect()
+
     header = {"token": f"{TOKEN}"}
     status = requests.delete(url=f"{SERVER_URL}/endpoint",
                              headers=header,
