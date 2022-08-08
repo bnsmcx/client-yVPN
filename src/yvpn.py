@@ -12,7 +12,8 @@ import typer
 import paramiko
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True,
+                  add_completion=False)
 SERVER_URL = "http://127.0.0.1:8000"
 
 
