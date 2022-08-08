@@ -4,6 +4,7 @@ import os
 import socket
 import time
 from pathlib import Path
+from typing import Tuple
 
 import requests
 
@@ -24,20 +25,31 @@ def get_user_token() -> str:
         return token
 
 
-def get_ssh_pubkey(ssh_pub_key_path: str) -> str:
-    return Path(ssh_pub_key_path).read_text().strip()
+def get_ssh_pubkey() -> Tuple[str, str]:
+    key_path = os.path.expanduser("~/.ssh/")
+    key_name = "wg0"
+    pubkey_path = f"{key_path}{key_name}.pub"
+    try:
+        pubkey = Path(pubkey_path).read_text().strip()
+    except FileNotFoundError:
+        os.system(f"ssh-keygen -f {key_path}{key_name} -N ''")
+        pubkey = Path(pubkey_path).read_text().strip()
+    return pubkey, pubkey_path
 
 
 @app.command()
-def create(ssh_pub_key_path: str, region: str = 'random'):
+def create(region: str = 'random'):
     """CREATE a new VPN endpoint"""
+
+    refresh_wireguard_keys()
+    ssh_pubkey, ssh_pubkey_path = get_ssh_pubkey()
 
     with get_spinner() as spinner:
         spinner.add_task("Creating the endpoint, this could take a minute.")
         header = {"token": f"{TOKEN}"}
         response = requests.post(url=f"{SERVER_URL}/create",
                                  json={'region': f'{region}',
-                                       'ssh_pub_key': f'{get_ssh_pubkey(ssh_pub_key_path)}'},
+                                       'ssh_pub_key': f'{ssh_pubkey}'},
                                  headers=header)
 
     if response.status_code != 200:
@@ -46,8 +58,7 @@ def create(ssh_pub_key_path: str, region: str = 'random'):
 
     server_ip = response.json()["server_ip"]
     client_ip = "10.0.0.2"  # TODO: let the user set this
-    refresh_client_keys()
-    server_public_key = server_key_exchange(ssh_pub_key_path, server_ip, client_ip)
+    server_public_key = server_key_exchange(ssh_pubkey_path, server_ip, client_ip)
 
     if server_public_key is None:
         print("Key exchange failed.")
@@ -148,7 +159,7 @@ def server_key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) ->
         print(e)
 
 
-def refresh_client_keys():
+def refresh_wireguard_keys():
     # delete old wireguard keys and config
     os.system("sudo rm /etc/wireguard/*")
 
