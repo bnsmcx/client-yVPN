@@ -15,16 +15,25 @@ app = typer.Typer()
 SERVER_URL = "http://127.0.0.1:8000"
 
 
+def get_user_token() -> str:
+    try:
+        return os.environ['TOKEN_yVPN']
+    except KeyError:
+        token = input("Enter token: ")
+        print("Set the 'TOKEN_yVPN' environment variable to skip this in the future.")
+        return token
+
+
 def get_ssh_pubkey(ssh_pub_key_path: str) -> str:
     return Path(ssh_pub_key_path).read_text().strip()
 
 
 @app.command()
-def create(token: str, ssh_pub_key_path: str, region: str = 'random'):
+def create(ssh_pub_key_path: str, region: str = 'random'):
     """CREATE a new VPN endpoint"""
 
-    print("Asking the server to create the endpoint, this could take a minute.")
-    header = {"token": f"{token}"}
+    print("Creating the endpoint, this could take a minute.")
+    header = {"token": f"{TOKEN}"}
     response = requests.post(url=f"{SERVER_URL}/create",
                              json={'region': f'{region}',
                                    'ssh_pub_key': f'{get_ssh_pubkey(ssh_pub_key_path)}'},
@@ -61,10 +70,10 @@ def disconnect():
 
 
 @app.command()
-def destroy(token: str, endpoint_name: str):
+def destroy(endpoint_name: str):
     """permanently DESTROY your endpoint"""
 
-    header = {"token": f"{token}"}
+    header = {"token": f"{TOKEN}"}
     status = requests.delete(url=f"{SERVER_URL}/endpoint",
                              headers=header,
                              params={'endpoint_name': f'{endpoint_name}'})
@@ -76,10 +85,10 @@ def destroy(token: str, endpoint_name: str):
 
 
 @app.command()
-def status(token: str):
+def status():
     """display connection, usage and endpoint info"""
 
-    header = {"token": f"{token}"}
+    header = {"token": f"{TOKEN}"}
     status = requests.get(url=f"{SERVER_URL}/status",
                           headers=header).json()
     print(status)
@@ -91,7 +100,7 @@ def endpoint_server_up(server_ip: str) -> bool:
         connection.connect((server_ip, 22))
         connection.shutdown(2)
         return True
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -127,7 +136,6 @@ def server_key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) ->
         (stdin, stdout, stderr) = ssh.exec_command("cat /etc/wireguard/public.key")
         server_public_key = stdout.read().decode().strip()
 
-        print("Key exchange complete ...")
         return server_public_key
 
     except Exception as e:
@@ -180,9 +188,9 @@ def configure_wireguard_client(server_public_key: str,
     os.system(f"sudo chmod 600 {config_file}")
 
 
-def get_datacenter_regions(token: str) -> list:
+def get_datacenter_regions() -> list:
     print("Getting a list of available datacenters ...")
-    header = {"token": f"{token}"}
+    header = {"token": f"{TOKEN}"}
     regions = requests.get(url=f"{SERVER_URL}/datacenters",
                            headers=header).json()["available"]
 
@@ -196,4 +204,5 @@ def spinning_cursor():
 
 
 if __name__ == "__main__":
+    TOKEN = get_user_token()
     app()
