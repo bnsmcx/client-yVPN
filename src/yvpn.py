@@ -28,7 +28,7 @@ def get_user_token() -> str:
 
 def get_ssh_pubkey() -> Tuple[str, str]:
     key_path = os.path.expanduser("~/.ssh/")
-    key_name = "wg0"
+    key_name = "yvpn"
     pubkey_path = f"{key_path}{key_name}.pub"
     try:
         pubkey = Path(pubkey_path).read_text().strip()
@@ -57,29 +57,34 @@ def create(region: str = 'random'):
         print(f"There was a problem:\n {response.json()}")
         exit(1)
 
-    server_ip = response.json()["server_ip"]
+    endpoint_ip = response.json()["server_ip"]
+    endpoint_name = response.json()["endpoint_name"]
     client_ip = "10.0.0.2"  # TODO: let the user set this
-    server_public_key = server_key_exchange(ssh_pubkey_path, server_ip, client_ip)
+    server_public_key = server_key_exchange(ssh_pubkey_path,
+                                            endpoint_ip, client_ip)
 
-    if server_public_key is None:
+    if not server_public_key:
         print("Key exchange failed.")
         exit(1)
 
-    configure_wireguard_client(server_public_key, server_ip, client_ip)
+    configure_wireguard_client(endpoint_name,
+                               server_public_key,
+                               endpoint_ip,
+                               client_ip)
 
     print("New endpoint successfully created and configured.")
 
 
 @app.command()
-def connect():
+def connect(endpoint_name: str):
     """CONNECT to your active endpoint"""
-    os.system("sudo wg-quick up wg0")
+    os.system(f"sudo wg-quick up {endpoint_name}")
 
 
 @app.command()
-def disconnect():
+def disconnect(endpoint_name: str):
     """DISCONNECT from your endpoint"""
-    os.system("sudo wg-quick down wg0")
+    os.system(f"sudo wg-quick down {endpoint_name}")
 
 
 @app.command()
@@ -87,7 +92,7 @@ def destroy(endpoint_name: str):
     """permanently DESTROY your endpoint"""
 
     # disconnect first
-    disconnect()
+    disconnect(endpoint_name)
 
     header = {"token": f"{TOKEN}"}
     status = requests.delete(url=f"{SERVER_URL}/endpoint",
@@ -95,6 +100,7 @@ def destroy(endpoint_name: str):
                              params={'endpoint_name': f'{endpoint_name}'})
 
     if status.status_code == 200:
+        os.system(f"sudo rm /etc/wireguard/{endpoint_name}.conf")
         print(f"{endpoint_name} successfully deleted.")
     else:
         print(f"Problem deleting {endpoint_name}:\n {status.json()}")
@@ -107,7 +113,8 @@ def status():
     header = {"token": f"{TOKEN}"}
     status = requests.get(url=f"{SERVER_URL}/status",
                           headers=header).json()
-    print(status)
+    for endpoint in status:
+        print(endpoint)
 
 
 def endpoint_server_up(server_ip: str) -> bool:
@@ -163,19 +170,25 @@ def server_key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) ->
         print(e)
 
 
-def refresh_wireguard_keys():
-    # delete old wireguard keys and config
-    os.system("sudo rm /etc/wireguard/*")
+def refresh_wireguard_keys(overwrite_existing: bool = False):
 
-    # generate fresh wireguard client keys
-    os.system("wg genkey | " + \
-              "sudo tee /etc/wireguard/private.key | " + \
-              "wg pubkey | sudo tee /etc/wireguard/public.key | " + \
-              "echo > /dev/null")  # hack: can't seem to write directly to public.key
+    keys_exist = Path("/etc/wireguard/private.key").is_file() and \
+                 Path("/etc/wireguard/public.key").is_file()
 
-    # lockdown key files
-    os.system("sudo chmod 600 /etc/wireguard/private.key && " + \
-              "sudo chmod 644 /etc/wireguard/public.key")
+    if not keys_exist or overwrite_existing:
+
+        # delete old wireguard keys and config
+        os.system("sudo rm /etc/wireguard/*")
+
+        # generate fresh wireguard client keys
+        os.system("wg genkey | " + \
+                  "sudo tee /etc/wireguard/private.key | " + \
+                  "wg pubkey | sudo tee /etc/wireguard/public.key | " + \
+                  "echo > /dev/null")  # hack: can't seem to write directly to public.key
+
+        # lockdown key files
+        os.system("sudo chmod 600 /etc/wireguard/private.key && " + \
+                  "sudo chmod 644 /etc/wireguard/public.key")
 
 
 def get_client_private_key() -> str:
@@ -186,7 +199,8 @@ def get_client_private_key() -> str:
     return private_key
 
 
-def configure_wireguard_client(server_public_key: str,
+def configure_wireguard_client(endpoint_name: str,
+                               server_public_key: str,
                                server_ip: str, client_ip: str) -> None:
     print("Setting up local configuration ...")
 
@@ -201,7 +215,7 @@ def configure_wireguard_client(server_public_key: str,
               "\n"
               )
 
-    config_file = "/etc/wireguard/wg0.conf"
+    config_file = f"/etc/wireguard/{endpoint_name}.conf"
     os.system(f"sudo touch {config_file}")
     os.system(f"sudo chmod 666 {config_file}")
     with open(config_file, "w") as f:
