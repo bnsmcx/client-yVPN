@@ -1,6 +1,0 @@
-#!/usr/bin/bash
-
-ip_info=$(nslookup myip.opendns.com resolver1.opendns.com)
-
-
-echo "${ip_info##*$'\n'}"
