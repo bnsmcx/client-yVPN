@@ -218,12 +218,6 @@ def get_datacenter_regions() -> list:
     return regions
 
 
-def spinning_cursor():
-    while True:
-        for cursor in '|/-\\':
-            yield cursor
-
-
 if __name__ == "__main__":
     TOKEN = get_user_token()
     app()
