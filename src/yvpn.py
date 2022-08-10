@@ -76,6 +76,12 @@ def create(region: str = 'random'):
 
 
 @app.command()
+def datacenters():
+    """GET a list of available datacenters for endpoint creation"""
+    print(get_datacenter_regions())
+
+
+@app.command()
 def connect(endpoint_name: str):
     """CONNECT to your active endpoint"""
     os.system(f"sudo wg-quick up {endpoint_name}")
@@ -84,7 +90,7 @@ def connect(endpoint_name: str):
 @app.command()
 def disconnect(endpoint_name: str):
     """DISCONNECT from your endpoint"""
-    os.system(f"sudo wg-quick down {endpoint_name}")
+    command_result = os.system(f"sudo wg-quick down {endpoint_name}")
 
 
 @app.command()
