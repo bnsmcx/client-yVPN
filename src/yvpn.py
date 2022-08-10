@@ -2,6 +2,8 @@
 
 import os
 import socket
+import subprocess
+from glob import glob
 import time
 from pathlib import Path
 from typing import Tuple
@@ -88,9 +90,12 @@ def connect(endpoint_name: str):
 
 
 @app.command()
-def disconnect(endpoint_name: str):
+def disconnect():
     """DISCONNECT from your endpoint"""
-    command_result = os.system(f"sudo wg-quick down {endpoint_name}")
+    endpoints = glob("/etc/wireguard/*.conf")
+    for endpoint in endpoints:
+        subprocess.run(["sudo", "wg-quick", "down", endpoint],
+                       capture_output=True)
 
 
 @app.command()
