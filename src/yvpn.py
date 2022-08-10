@@ -12,6 +12,7 @@ import requests
 
 import typer
 import paramiko
+from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 app = typer.Typer(no_args_is_help=True,
@@ -129,6 +130,15 @@ def status():
     header = {"token": f"{TOKEN}"}
     status = requests.get(url=f"{SERVER_URL}/status",
                           headers=header).json()
+    active_connection = subprocess.run(["sudo", "wg", "show"],
+                                       capture_output=True)
+    if not active_connection.stdout:
+        print("Not connected.")
+    else:
+        endpoint = active_connection.stdout.split()[1].decode()
+        print(f"Connected to: {endpoint}")
+
+    print("Available Endpoints:")
     for endpoint in status:
         print(endpoint)
 
