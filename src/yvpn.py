@@ -102,6 +102,17 @@ def disconnect():
 
 
 @app.command()
+def clean():
+    """DELETE and REFRESH all keys, DESTROY all endpoints"""
+    disconnect()
+    endpoints = glob("/etc/wireguard/*.conf")
+    for endpoint in endpoints:
+        destroy(endpoint.replace('.conf', "").replace("/etc/wireguard/", ""))
+
+    refresh_wireguard_keys(True)
+
+
+@app.command()
 def destroy(endpoint_name: str):
     """permanently DESTROY your endpoint"""
 
@@ -205,7 +216,9 @@ def refresh_wireguard_keys(overwrite_existing: bool = False):
     if not keys_exist or overwrite_existing:
 
         # delete old wireguard keys and config
-        subprocess.run(["sudo", "rm", "/etc/wireguard/*"])
+        files = glob("/etc/wireguard/*")
+        for file in files:
+            subprocess.run(["sudo", "rm", file])
 
         # generate fresh wireguard client keys
         subprocess.run(["wg", "genkey", "|", "sudo", "tee",
