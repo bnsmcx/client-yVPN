@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-import os
+from os import environ, path
 import socket
 import subprocess
 from glob import glob
@@ -21,7 +21,7 @@ SERVER_URL = "http://127.0.0.1:8000"
 
 def get_user_token() -> str:
     try:
-        return os.environ['TOKEN_yVPN']
+        return environ['TOKEN_yVPN']
     except KeyError:
         token = typer.prompt("Enter token")
         print("Set the 'TOKEN_yVPN' environment variable to skip this in the future.")
@@ -29,13 +29,13 @@ def get_user_token() -> str:
 
 
 def get_ssh_pubkey() -> Tuple[str, str]:
-    key_path = os.path.expanduser("~/.ssh/")
+    key_path = path.expanduser("~/.ssh/")
     key_name = "yvpn"
     pubkey_path = f"{key_path}{key_name}.pub"
     try:
         pubkey = Path(pubkey_path).read_text().strip()
     except FileNotFoundError:
-        os.system(f"ssh-keygen -f {key_path}{key_name} -N ''")
+        subprocess.run(["ssh-keygen", "-f", f"{key_path}{key_name}", "-N", ""])
         pubkey = Path(pubkey_path).read_text().strip()
     return pubkey, pubkey_path
 
@@ -86,7 +86,8 @@ def datacenters():
 @app.command()
 def connect(endpoint_name: str):
     """CONNECT to your active endpoint"""
-    os.system(f"sudo wg-quick up {endpoint_name}")
+    disconnect()
+    subprocess.run(["sudo", "wg-quick", "up", endpoint_name])
 
 
 @app.command()
@@ -103,7 +104,7 @@ def destroy(endpoint_name: str):
     """permanently DESTROY your endpoint"""
 
     # disconnect first
-    disconnect(endpoint_name)
+    disconnect()
 
     header = {"token": f"{TOKEN}"}
     status = requests.delete(url=f"{SERVER_URL}/endpoint",
@@ -111,8 +112,12 @@ def destroy(endpoint_name: str):
                              params={'endpoint_name': f'{endpoint_name}'})
 
     if status.status_code == 200:
-        os.system(f"sudo rm /etc/wireguard/{endpoint_name}.conf")
-        print(f"{endpoint_name} successfully deleted.")
+        sp = subprocess.run(["sudo", "rm", f"/etc/wireguard/{endpoint_name}.conf"],
+                       capture_output=True)
+        if sp.returncode == 0:
+            print(f"{endpoint_name} successfully deleted.")
+        else:
+            print(f"{endpoint_name} deleted but couldn't delete the wireguard config.")
     else:
         print(f"Problem deleting {endpoint_name}:\n {status.json()}")
 
@@ -189,24 +194,25 @@ def refresh_wireguard_keys(overwrite_existing: bool = False):
     if not keys_exist or overwrite_existing:
 
         # delete old wireguard keys and config
-        os.system("sudo rm /etc/wireguard/*")
+        subprocess.run(["sudo", "rm", "/etc/wireguard/*"])
 
         # generate fresh wireguard client keys
-        os.system("wg genkey | " + \
-                  "sudo tee /etc/wireguard/private.key | " + \
-                  "wg pubkey | sudo tee /etc/wireguard/public.key | " + \
-                  "echo > /dev/null")  # hack: can't seem to write directly to public.key
+        subprocess.run(["wg", "genkey", "|", "sudo", "tee",
+                        "/etc/wireguard/private.key", "|",
+                        "wg", "pubkey", "|", "sudo", "tee",
+                        "/etc/wireguard/public.key", "|",
+                        "echo", ">", "/dev/null"])  # hack: can't seem to write directly to public.key
 
         # lockdown key files
-        os.system("sudo chmod 600 /etc/wireguard/private.key && " + \
-                  "sudo chmod 644 /etc/wireguard/public.key")
+        subprocess.run(["sudo", "chmod", "600", "/etc/wireguard/private.key",
+                        "&&", "sudo", "chmod", "644", "/etc/wireguard/public.key"])
 
 
 def get_client_private_key() -> str:
-    os.system("sudo chmod 644 /etc/wireguard/private.key")
+    subprocess.run(["sudo", "chmod", "644", "/etc/wireguard/private.key"])
     with open("/etc/wireguard/private.key") as f:
         private_key = f.read().strip()
-    os.system("sudo chmod 600 /etc/wireguard/private.key")
+    subprocess.run(["sudo", "chmod", "600", "/etc/wireguard/private.key"])
     return private_key
 
 
@@ -227,11 +233,11 @@ def configure_wireguard_client(endpoint_name: str,
               )
 
     config_file = f"/etc/wireguard/{endpoint_name}.conf"
-    os.system(f"sudo touch {config_file}")
-    os.system(f"sudo chmod 666 {config_file}")
+    subprocess.run(["sudo", "touch", config_file])
+    subprocess.run(["sudo", "chmod", "666", config_file])
     with open(config_file, "w") as f:
         f.write("\n".join(config))
-    os.system(f"sudo chmod 600 {config_file}")
+    subprocess.run(["sudo", "chmod", "600", config_file])
 
 
 def get_datacenter_regions() -> list:
