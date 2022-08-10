@@ -68,6 +68,7 @@ def create(region: str = 'random'):
 
     if not server_public_key:
         print("Key exchange failed.")
+        destroy(endpoint_name)
         exit(1)
 
     configure_wireguard_client(endpoint_name,
