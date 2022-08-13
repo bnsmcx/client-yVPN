@@ -95,9 +95,23 @@ def get_first_endpoint():
     return endpoints[0]["endpoint_name"]
 
 
+def handle_endpoint_name_or_number(user_input: str) -> str:
+    """allow a user to select an endpoint by name or number"""
+    header = {"token": f"{TOKEN}"}
+    endpoints: dict = requests.get(url=f"{SERVER_URL}/status",
+                             headers=header).json()
+
+    # if it's not an appropriate number, it must be a name or user error
+    if not user_input.isnumeric() or int(user_input) > len(endpoints):
+        return user_input
+
+    return endpoints[int(user_input)]["endpoint_name"]
+
+
 @app.command()
 def connect(endpoint_name: str = typer.Argument(get_first_endpoint)):
     """CONNECT to your active endpoint"""
+    endpoint_name = handle_endpoint_name_or_number(endpoint_name)
     disconnect()
     subprocess.run(["sudo", "wg-quick", "up", endpoint_name])
 
