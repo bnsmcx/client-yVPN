@@ -193,9 +193,9 @@ def status():
 
     billing_table = Table()
 
-    billing_table.add_column("token", justify='center')
-    billing_table.add_column("expiration", justify='center')
-    billing_table.add_column("balance", justify='center')
+    billing_table.add_column("Token", justify='center')
+    billing_table.add_column("Expiration", justify='center')
+    billing_table.add_column("Balance", justify='center')
     billing_table.add_row("TODO", "TODO", "TODO")
 
     console = Console()
