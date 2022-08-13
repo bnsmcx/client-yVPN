@@ -113,7 +113,12 @@ def connect(endpoint_name: str = typer.Argument(get_first_endpoint)):
     """CONNECT to your active endpoint"""
     endpoint_name = handle_endpoint_name_or_number(endpoint_name)
     disconnect()
-    subprocess.run(["sudo", "wg-quick", "up", endpoint_name])
+    command = subprocess.run(["sudo", "wg-quick", "up", endpoint_name],
+                             capture_output=True)
+
+    if not command.returncode == 0:
+        print(command.stderr)
+    print(f"[bold green]Connected to {endpoint_name}")
 
 
 @app.command()
