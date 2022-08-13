@@ -215,21 +215,26 @@ def refresh_wireguard_keys(overwrite_existing: bool = False):
 
     if not keys_exist or overwrite_existing:
 
-        # delete old wireguard keys and config
-        files = glob("/etc/wireguard/*")
-        for file in files:
-            subprocess.run(["sudo", "rm", file])
+        # unlock /etc/wireguard permissions
+        subprocess.run(["sudo", "chmod", "-R", "777", "/etc/wireguard"])
 
-        # generate fresh wireguard client keys
-        subprocess.run(["wg", "genkey", "|", "sudo", "tee",
-                        "/etc/wireguard/private.key", "|",
-                        "wg", "pubkey", "|", "sudo", "tee",
-                        "/etc/wireguard/public.key", "|",
-                        "echo", ">", "/dev/null"])  # hack: can't seem to write directly to public.key
+        # generate and save fresh wireguard private key
+        private_key = subprocess.run(["wg", "genkey"], capture_output=True)\
+            .stdout.decode()
+        with open("/etc/wireguard/private.key", "w") as key_file:
+            key_file.write(private_key)
 
-        # lockdown key files
-        subprocess.run(["sudo", "chmod", "600", "/etc/wireguard/private.key",
-                        "&&", "sudo", "chmod", "644", "/etc/wireguard/public.key"])
+        # generate and save wireguard public key
+        private_key = subprocess.Popen(["cat", "/etc/wireguard/private.key"],
+                                       stdout=subprocess.PIPE)
+        public_key = subprocess.check_output(["wg", "pubkey"],
+                                             stdin=private_key.stdout).decode()
+        with open("/etc/wireguard/public.key", "w") as key_file:
+            key_file.write(public_key)
+
+        # lock /etc/wireguard permissions
+        subprocess.run(["sudo", "chmod", "-R", "755", "/etc/wireguard"])
+        subprocess.run(["sudo", "chmod", "700", "/etc/wireguard/private.key"])
 
 
 def get_client_private_key() -> str:
