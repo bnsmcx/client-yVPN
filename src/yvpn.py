@@ -13,6 +13,9 @@ import requests
 import typer
 import paramiko
 from rich import print
+from rich.panel import Panel
+from rich.console import Console
+from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 app = typer.Typer(no_args_is_help=True,
@@ -135,24 +138,70 @@ def destroy(endpoint_name: str):
         print(f"Problem deleting {endpoint_name}:\n {status.json()}")
 
 
+def get_datacenter_name(name: str) -> str:
+    slug = name[-4:-1]
+
+    match slug:
+        case 'ams':
+            return "Amsterdam"
+        case 'nyc':
+            return "New York City"
+        case 'sfo':
+            return "San Francisco"
+        case 'sgp':
+            return "Singapore"
+        case 'lon':
+            return "London"
+        case 'fra':
+            return "Frankfurt"
+        case 'tor':
+            return "Toronto"
+        case 'blr':
+            return "Bangalore"
+
+
 @app.command()
 def status():
     """display connection, usage and endpoint info"""
 
     header = {"token": f"{TOKEN}"}
-    status = requests.get(url=f"{SERVER_URL}/status",
+    server_status = requests.get(url=f"{SERVER_URL}/status",
                           headers=header).json()
     active_connection = subprocess.run(["sudo", "wg", "show"],
                                        capture_output=True)
-    if not active_connection.stdout:
-        print("Not connected.")
-    else:
-        endpoint = active_connection.stdout.split()[1].decode()
-        print(f"Connected to: {endpoint}")
 
-    print("Available Endpoints:")
-    for endpoint in status:
-        print(endpoint)
+    connection_info = Panel.fit("[bold]Not connected.")
+    if active_endpoint := active_connection.stdout:
+        active_endpoint = active_endpoint.decode().split()[1]
+        connection_info = Panel.fit(f"[bold cyan]Connected to: {active_endpoint}",)
+
+    endpoint_table = Table()
+
+    endpoint_table.add_column("Number", justify="center")
+    endpoint_table.add_column("Name", justify="center")
+    endpoint_table.add_column("Location", justify="center")
+    endpoint_table.add_column("Created", justify="center")
+
+    for index, endpoint in enumerate(server_status):
+        name = endpoint["endpoint_name"]
+        location = get_datacenter_name(name)
+        endpoint_style = "bold"
+        if active_endpoint == name:
+            endpoint_style = "bold green"
+        endpoint_table.add_row(str(index), name, location, "TODO",
+                      style=endpoint_style)
+
+    billing_table = Table()
+
+    billing_table.add_column("token", justify='center')
+    billing_table.add_column("expiration", justify='center')
+    billing_table.add_column("balance", justify='center')
+    billing_table.add_row("TODO", "TODO", "TODO")
+
+    console = Console()
+    console.print(connection_info, justify="center")
+    console.print(endpoint_table, justify="center")
+    console.print(billing_table, justify="center")
 
 
 def endpoint_server_up(server_ip: str) -> bool:
