@@ -137,12 +137,11 @@ def clean():
 
 
 @app.command()
-def destroy(endpoint_name: str):
+def destroy(endpoint_name: str = typer.Argument(get_first_endpoint)):
     """permanently DESTROY your endpoint"""
 
-    # disconnect first
     disconnect()
-
+    endpoint_name = handle_endpoint_name_or_number(endpoint_name)
     header = {"token": f"{TOKEN}"}
     status = requests.delete(url=f"{SERVER_URL}/endpoint",
                              headers=header,
