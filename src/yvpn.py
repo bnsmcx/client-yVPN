@@ -88,8 +88,15 @@ def datacenters():
     print(get_datacenter_regions())
 
 
+def get_first_endpoint():
+    header = {"token": f"{TOKEN}"}
+    endpoints = requests.get(url=f"{SERVER_URL}/status",
+                                 headers=header).json()
+    return endpoints[0]["endpoint_name"]
+
+
 @app.command()
-def connect(endpoint_name: str):
+def connect(endpoint_name: str = typer.Argument(get_first_endpoint)):
     """CONNECT to your active endpoint"""
     disconnect()
     subprocess.run(["sudo", "wg-quick", "up", endpoint_name])
