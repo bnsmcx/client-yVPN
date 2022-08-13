@@ -45,7 +45,7 @@ def get_ssh_pubkey() -> Tuple[str, str]:
 
 
 @app.command()
-def create(region: str = 'random'):
+def create(region: str = typer.Argument("random")):
     """CREATE a new VPN endpoint"""
 
     refresh_wireguard_keys()
