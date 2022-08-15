@@ -1,7 +1,6 @@
 import subprocess
-from os import environ, path
+from os import path
 import socket
-import typer
 import requests
 import time
 from pathlib import Path
@@ -9,15 +8,6 @@ from typing import Tuple
 import paramiko
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from yvpn.config import TOKEN, SERVER_URL
-
-
-def get_user_token() -> str:
-    try:
-        return environ['TOKEN_yVPN']
-    except KeyError:
-        token = typer.prompt("Enter token")
-        print("Set the 'TOKEN_yVPN' environment variable to skip this in the future.")
-        return token
 
 
 def get_ssh_pubkey() -> Tuple[str, str]:
