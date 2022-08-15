@@ -86,10 +86,9 @@ def clean():
     """DELETE and REFRESH all keys, DESTROY all endpoints"""
     disconnect()
     endpoints = glob("/etc/wireguard/*.conf")
+    refresh_wireguard_keys(True)
     for endpoint in endpoints:
         destroy(endpoint.replace('.conf', "").replace("/etc/wireguard/", ""))
-
-    refresh_wireguard_keys(True)
 
 
 @app.command()
