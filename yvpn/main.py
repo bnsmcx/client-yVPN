@@ -9,6 +9,8 @@ from rich.table import Table
 
 from yvpn.util import *
 from yvpn.api_calls import *
+from yvpn.wireguard import *
+from yvpn.endpoint import *
 from yvpn.config import SERVER_URL, TOKEN
 
 app = typer.Typer(no_args_is_help=True,

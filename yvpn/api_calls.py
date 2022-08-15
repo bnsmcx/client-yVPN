@@ -29,5 +29,3 @@ def get_datacenter_regions() -> list:
                            headers=header).json()["available"]
 
     return regions
-
-
