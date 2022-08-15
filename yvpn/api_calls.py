@@ -1,8 +1,13 @@
+"""
+Functions that make requests to the yvpn server.
+"""
+
 import requests
 from yvpn.config import TOKEN, SERVER_URL
 
 
 def get_first_endpoint():
+    """return the name of a user's first endpoint"""
     header = {"token": f"{TOKEN}"}
     endpoints = requests.get(url=f"{SERVER_URL}/status",
                              headers=header).json()
@@ -23,6 +28,7 @@ def handle_endpoint_name_or_number(user_input: str) -> str:
 
 
 def get_datacenter_regions() -> list:
+    """return a list of available datacenters"""
     print("Getting a list of available datacenters ...")
     header = {"token": f"{TOKEN}"}
     regions = requests.get(url=f"{SERVER_URL}/datacenters",

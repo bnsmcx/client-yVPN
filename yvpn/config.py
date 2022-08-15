@@ -1,7 +1,12 @@
+"""
+Handle setting the two global variables the app needs.
+"""
+
 from os import environ
 
 
 def get_user_token() -> str:
+    """Try to get token from an environment variable, ask the user otherwise"""
     try:
         return environ['TOKEN_yVPN']
     except KeyError:
