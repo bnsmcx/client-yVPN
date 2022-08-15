@@ -1,13 +1,11 @@
 import subprocess
 from os import path
 import socket
-import requests
 import time
 from pathlib import Path
 from typing import Tuple
 import paramiko
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from yvpn.config import TOKEN, SERVER_URL
 
 
 def get_ssh_pubkey() -> Tuple[str, str]:
@@ -20,26 +18,6 @@ def get_ssh_pubkey() -> Tuple[str, str]:
         subprocess.run(["ssh-keygen", "-f", f"{key_path}{key_name}", "-N", ""])
         pubkey = Path(pubkey_path).read_text().strip()
     return pubkey, pubkey_path
-
-
-def get_first_endpoint():
-    header = {"token": f"{TOKEN}"}
-    endpoints = requests.get(url=f"{SERVER_URL}/status",
-                             headers=header).json()
-    return endpoints[0]["endpoint_name"]
-
-
-def handle_endpoint_name_or_number(user_input: str) -> str:
-    """allow a user to select an endpoint by name or number"""
-    header = {"token": f"{TOKEN}"}
-    endpoints: dict = requests.get(url=f"{SERVER_URL}/status",
-                                   headers=header).json()
-
-    # if it's not an appropriate number, it must be a name or user error
-    if not user_input.isnumeric() or int(user_input) > len(endpoints):
-        return user_input
-
-    return endpoints[int(user_input)]["endpoint_name"]
 
 
 def get_datacenter_name(name: str) -> str:
@@ -176,14 +154,5 @@ def configure_wireguard_client(endpoint_name: str,
     with open(config_file, "w") as f:
         f.write("\n".join(config))
     subprocess.run(["sudo", "chmod", "600", config_file])
-
-
-def get_datacenter_regions() -> list:
-    print("Getting a list of available datacenters ...")
-    header = {"token": f"{TOKEN}"}
-    regions = requests.get(url=f"{SERVER_URL}/datacenters",
-                           headers=header).json()["available"]
-
-    return regions
 
 

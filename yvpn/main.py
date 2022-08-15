@@ -2,13 +2,13 @@
 
 from glob import glob
 import typer
-import requests
 from rich import print
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
 from yvpn.util import *
+from yvpn.api_calls import *
 from yvpn.config import SERVER_URL, TOKEN
 
 app = typer.Typer(no_args_is_help=True,
