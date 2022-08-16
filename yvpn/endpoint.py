@@ -9,7 +9,7 @@ import paramiko
 from yvpn.util import get_spinner
 
 
-def server_key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) -> str:
+def key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) -> str:
     """exchange wireguard keys via ssh"""
 
     with get_spinner() as spinner:

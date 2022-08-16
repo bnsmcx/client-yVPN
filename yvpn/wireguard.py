@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 
 
-def refresh_wireguard_keys(overwrite_existing: bool = False):
+def refresh_keys(overwrite_existing: bool = False):
     """Check if keys exist and create them, or force them to be overwritten"""
 
     keys_exist = Path("/etc/wireguard/private.key").is_file() and \
@@ -52,9 +52,9 @@ def get_client_private_key() -> str:
     return private_key
 
 
-def configure_wireguard_client(endpoint_name: str,
-                               server_public_key: str,
-                               server_ip: str, client_ip: str) -> None:
+def configure_client(endpoint_name: str,
+                     server_public_key: str,
+                     server_ip: str, client_ip: str) -> None:
     """create the wireguard config"""
     print("Setting up local configuration ...")
 
