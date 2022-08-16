@@ -10,16 +10,13 @@ import sys
 from glob import glob
 import requests
 import typer
-from rich import print as rprint
-from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 
 from yvpn import util
 from yvpn import api_calls
 from yvpn import wireguard
 from yvpn import endpoint
-from yvpn.config import SERVER_URL, TOKEN
+from yvpn.config import SERVER_URL, TOKEN, console
 
 app = typer.Typer(no_args_is_help=True,
                   add_completion=False)
@@ -41,7 +38,7 @@ def create(region: str = typer.Argument("random")):
                                  headers=header)
 
     if response.status_code != 200:
-        rprint(f"There was a problem:\n {response.json()}")
+        console.print(f"There was a problem:\n {response.json()}")
         sys.exit(1)
 
     endpoint_ip = response.json()["server_ip"]
@@ -51,7 +48,7 @@ def create(region: str = typer.Argument("random")):
                                               endpoint_ip, client_ip)
 
     if not server_public_key:
-        rprint("Key exchange failed.")
+        console.print("Key exchange failed.")
         destroy(endpoint_name)
         sys.exit(1)
 
@@ -60,13 +57,13 @@ def create(region: str = typer.Argument("random")):
                                endpoint_ip,
                                client_ip)
 
-    rprint("New endpoint successfully created and configured.")
+    console.print("New endpoint successfully created and configured.")
 
 
 @app.command()
 def datacenters():
     """GET a list of available datacenters for endpoint creation"""
-    rprint(api_calls.get_datacenter_regions())
+    console.print(api_calls.get_datacenter_regions())
 
 
 @app.command()
@@ -79,8 +76,8 @@ def connect(endpoint_name: str = typer.Argument(api_calls.get_first_endpoint)):
                              capture_output=True)
 
     if not command.returncode == 0:
-        rprint(command.stderr)
-    rprint(f"[bold green]Connected to {endpoint_name}")
+        console.print(command.stderr)
+    console.print(f"[bold green]Connected to {endpoint_name}")
 
 
 @app.command()
@@ -124,11 +121,11 @@ def destroy(endpoint_name: str = typer.Argument(api_calls.get_first_endpoint)):
             check=True,
             capture_output=True)
         if sub_process.returncode == 0:
-            rprint(f"{endpoint_name} successfully deleted.")
+            console.print(f"{endpoint_name} successfully deleted.")
         else:
-            rprint(f"{endpoint_name} deleted but couldn't delete the wireguard config.")
+            console.print(f"{endpoint_name} deleted but couldn't delete the wireguard config.")
     else:
-        rprint(f"Problem deleting {endpoint_name}:\n {deletion_request.json()}")
+        console.print(f"Problem deleting {endpoint_name}:\n {deletion_request.json()}")
 
 
 @app.command()
@@ -139,19 +136,22 @@ def status():
                                  headers=header)
 
     if server_status.status_code != 200:
-        rprint("[red bold]There was a problem:", server_status.json())
+        console.print("[red bold]There was a problem:", server_status.json())
+        console.print_json(server_status.json())
         sys.exit(1)
 
     active_connection = subprocess.run(["sudo", "wg", "show"],
                                        capture_output=True,
                                        check=True)
 
-    connection_info = Panel.fit("[bold]Not connected.")
+    connection_info = "[bold]Not connected."
+    token_info = "[bold]Token will be depleted on TODO at current usage."
+
     if active_endpoint := active_connection.stdout:
         active_endpoint = active_endpoint.decode().split()[1]
-        connection_info = Panel.fit(f"[bold cyan]Connected to: {active_endpoint}", )
+        connection_info = f"[bold green]Connected to: {active_endpoint}"
 
-    endpoint_table = Table()
+    endpoint_table = Table(caption=token_info, expand=True)
 
     endpoint_table.add_column("Number", justify="center")
     endpoint_table.add_column("Name", justify="center")
@@ -167,17 +167,9 @@ def status():
         endpoint_table.add_row(str(index), name, location, "TODO",
                                style=endpoint_style)
 
-    billing_table = Table()
-
-    billing_table.add_column("Token", justify='center')
-    billing_table.add_column("Expiration", justify='center')
-    billing_table.add_column("Balance", justify='center')
-    billing_table.add_row("TODO", "TODO", "TODO")
-
-    console = Console()
-    console.print(connection_info, justify="center")
+    console.print()
+    console.rule(connection_info)
     console.print(endpoint_table, justify="center")
-    console.print(billing_table, justify="center")
 
 
 def main():

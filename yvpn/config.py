@@ -3,6 +3,7 @@ Handle setting the two global variables the app needs.
 """
 
 from os import environ
+from rich.console import Console
 
 
 def get_user_token() -> str:
@@ -17,3 +18,4 @@ def get_user_token() -> str:
 
 SERVER_URL = "http://127.0.0.1:8000"
 TOKEN = get_user_token()
+console = Console()
