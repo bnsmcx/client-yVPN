@@ -88,9 +88,13 @@ def disconnect():
     """DISCONNECT from your endpoint"""
     interfaces = glob("/etc/wireguard/*.conf")
     for interface in interfaces:
-        subprocess.run(["sudo", "wg-quick", "down", interface],
-                       check=True,
-                       capture_output=True)
+        try:
+            subprocess.run(["sudo", "wg-quick", "down", interface],
+                           check=True,
+                           capture_output=True)
+        except subprocess.CalledProcessError:
+            # ignore error when trying to bring down an inactive interface
+            continue
 
 
 @app.command()
