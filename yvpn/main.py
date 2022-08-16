@@ -136,7 +136,7 @@ def status():
                                  headers=header)
 
     if server_status.status_code != 200:
-        console.print("[red bold]There was a problem:", server_status.json())
+        console.print("[red bold]There was a problem:")
         console.print_json(server_status.json())
         sys.exit(1)
 
@@ -170,6 +170,7 @@ def status():
     console.print()
     console.rule(connection_info)
     console.print(endpoint_table, justify="center")
+    console.print()
 
 
 def main():
