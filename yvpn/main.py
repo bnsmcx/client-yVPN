@@ -168,7 +168,7 @@ def status():
                     destroy(name)
                     sys.exit(1)
                 case "repair":
-                    print("TODO")
+                    print("TODO: Not implemented, you can only 'delete' broken endpoints")
         location = util.get_datacenter_name(name)
         endpoint_style = "bold"
         if active_endpoint == name:
