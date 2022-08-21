@@ -7,6 +7,7 @@ import socket
 import time
 import paramiko
 from yvpn.util import get_spinner
+from rich.prompt import Prompt
 
 
 def key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) -> str:
@@ -32,7 +33,7 @@ def key_exchange(ssh_pubkey_path: str, server_ip: str, client_ip: str) -> str:
 
     # activate client on server
     encoding = locale.getpreferredencoding()
-    client_public_key = Path("/etc/wireguard/public.key")\
+    client_public_key = Path("/etc/wireguard/public.key") \
         .read_text(encoding=encoding).strip()
     command = f"wg set wg0 peer {client_public_key} allowed-ips {client_ip}"
     ssh.exec_command(command)
@@ -53,3 +54,11 @@ def endpoint_server_up(server_ip: str) -> bool:
         return True
     except ConnectionRefusedError:
         return False
+
+
+def prompt_to_fix(name: str) -> str:
+    action = Prompt.ask(f"Problem with {name}'s wireguard config, what do you want to do?",
+                        choices=["delete", "repair"],
+                        default="delete")
+
+    return action

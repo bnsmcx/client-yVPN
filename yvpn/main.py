@@ -116,14 +116,15 @@ def destroy(endpoint_name: str = typer.Argument(api_calls.get_first_endpoint)):
                                        params={'endpoint_name': f'{endpoint_name}'})
 
     if deletion_request.status_code == 200:
-        sub_process = subprocess.run(
-            ["sudo", "rm", f"/etc/wireguard/{endpoint_name}.conf"],
-            check=True,
-            capture_output=True)
-        if sub_process.returncode == 0:
+        try:
+            subprocess.run(
+                ["sudo", "rm", f"/etc/wireguard/{endpoint_name}.conf"],
+                check=True,
+                capture_output=True)
             console.print(f"{endpoint_name} successfully deleted.")
-        else:
+        except subprocess.CalledProcessError:
             console.print(f"{endpoint_name} deleted but couldn't delete the wireguard config.")
+            console.print("This is probably because it does not exist.")
     else:
         console.print(f"Problem deleting {endpoint_name}:\n {deletion_request.json()}")
 
@@ -131,14 +132,6 @@ def destroy(endpoint_name: str = typer.Argument(api_calls.get_first_endpoint)):
 @app.command()
 def status():
     """display connection, usage and endpoint info"""
-    header = {"token": f"{TOKEN}"}
-    server_status = requests.get(url=f"{SERVER_URL}/status",
-                                 headers=header)
-
-    if server_status.status_code != 200:
-        console.print("[red bold]There was a problem:")
-        console.print_json(server_status.json())
-        sys.exit(1)
 
     active_connection = subprocess.run(["sudo", "wg", "show"],
                                        capture_output=True,
@@ -158,8 +151,24 @@ def status():
     endpoint_table.add_column("Location", justify="center")
     endpoint_table.add_column("Created", justify="center")
 
+    header = {"token": f"{TOKEN}"}
+    server_status = requests.get(url=f"{SERVER_URL}/status",
+                                 headers=header)
+
+    if server_status.status_code != 200:
+        console.print("[red bold]There was a problem:")
+        console.print_json(server_status.json())
+        sys.exit(1)
+
     for index, endpoint_server in enumerate(server_status.json()):
         name = endpoint_server["endpoint_name"]
+        if not wireguard.config_exists(name):
+            match endpoint.prompt_to_fix(name):
+                case "delete":
+                    destroy(name)
+                    sys.exit(1)
+                case "repair":
+                    print("TODO")
         location = util.get_datacenter_name(name)
         endpoint_style = "bold"
         if active_endpoint == name:
