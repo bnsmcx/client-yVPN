@@ -81,6 +81,4 @@ def configure_client(endpoint_name: str,
 
 def config_exists(name: str) -> bool:
     interfaces = [x.split("/")[-1] for x in glob("/etc/wireguard/*.conf")]
-    for interface in interfaces:
-        print(interface)
     return name + ".conf" in interfaces
