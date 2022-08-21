@@ -21,7 +21,8 @@ def get_user_token() -> str:
 
 def test_server_connection(url: str):
     try:
-        requests.get(url=f"{url}/status")
+        header = {"token": f"{TOKEN}"}
+        requests.get(url=f"{url}/status", headers=header)
     except (InvalidURL, InvalidSchema, MissingSchema, ConnectionError) as e:
         print(f"There is a problem with your server url:\n{e}")
         print(f"Ensure it is set correctly to include the http/https prefix.")
@@ -40,6 +41,6 @@ def get_server_url():
         return url
 
 
-SERVER_URL = get_server_url()
 TOKEN = get_user_token()
+SERVER_URL = get_server_url()
 console = Console()
