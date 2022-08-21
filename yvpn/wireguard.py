@@ -2,6 +2,7 @@
 Functions to manage wireguard
 """
 import locale
+from glob import glob
 from pathlib import Path
 import subprocess
 
@@ -76,3 +77,10 @@ def configure_client(endpoint_name: str,
     with open(config_file, "w", encoding=enc) as file:
         file.write("\n".join(config))
     subprocess.run(["sudo", "chmod", "600", config_file], check=True)
+
+
+def config_exists(name: str) -> bool:
+    interfaces = [x.split("/")[-1] for x in glob("/etc/wireguard/*.conf")]
+    for interface in interfaces:
+        print(interface)
+    return name + ".conf" in interfaces
