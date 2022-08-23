@@ -157,7 +157,7 @@ def status():
 
     if server_status.status_code != 200:
         console.print("[red bold]There was a problem:")
-        console.print_json(server_status.json())
+        console.print(server_status.json())
         sys.exit(1)
 
     for index, endpoint_server in enumerate(server_status.json()):
