@@ -10,6 +10,9 @@ import subprocess
 def refresh_keys(overwrite_existing: bool = False):
     """Check if keys exist and create them, or force them to be overwritten"""
 
+    subprocess.run(["sudo", "chmod", "755", "/etc/wireguard"],
+                   check=True)
+
     keys_exist = Path("/etc/wireguard/private.key").is_file() and \
                  Path("/etc/wireguard/public.key").is_file()
 
