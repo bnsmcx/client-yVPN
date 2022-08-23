@@ -10,6 +10,9 @@ import subprocess
 def refresh_keys(overwrite_existing: bool = False):
     """Check if keys exist and create them, or force them to be overwritten"""
 
+    subprocess.run(["sudo", "chmod", "755", "/etc/wireguard"],
+                   check=True)
+
     keys_exist = Path("/etc/wireguard/private.key").is_file() and \
                  Path("/etc/wireguard/public.key").is_file()
 
@@ -82,3 +85,9 @@ def configure_client(endpoint_name: str,
 def config_exists(name: str) -> bool:
     interfaces = [x.split("/")[-1] for x in glob("/etc/wireguard/*.conf")]
     return name + ".conf" in interfaces
+
+
+def wireguard_installed() -> bool:
+    """Check to see if wireguard is installed"""
+    sp = subprocess.run(["which", "wg"], capture_output=True)
+    return True if sp.returncode == 0 else False
