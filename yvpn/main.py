@@ -24,7 +24,7 @@ app = typer.Typer(no_args_is_help=True,
 
 @app.command()
 def create(region: str = typer.Argument("random")):
-    """CREATE a new VPN endpoint"""
+    """CREATE a new VPN endpoint, random by default"""
 
     wireguard.refresh_keys()
     ssh_pubkey, ssh_pubkey_path = util.get_ssh_pubkey()
@@ -68,7 +68,7 @@ def datacenters():
 
 @app.command()
 def connect(endpoint_name: str = typer.Argument(api_calls.get_first_endpoint)):
-    """CONNECT to your active endpoint"""
+    """CONNECT to an endpoint by name or number"""
     endpoint_name = api_calls.handle_endpoint_name_or_number(endpoint_name)
     disconnect()
     command = subprocess.run(["sudo", "wg-quick", "up", endpoint_name],
@@ -82,7 +82,7 @@ def connect(endpoint_name: str = typer.Argument(api_calls.get_first_endpoint)):
 
 @app.command()
 def disconnect():
-    """DISCONNECT from your endpoint"""
+    """DISCONNECT from the active endpoint"""
     interfaces = glob("/etc/wireguard/*.conf")
     for interface in interfaces:
         try:
@@ -106,7 +106,7 @@ def clean():
 
 @app.command()
 def destroy(endpoint_name: str = typer.Argument(api_calls.get_first_endpoint)):
-    """permanently DESTROY your endpoint"""
+    """permanently DESTROY an endpoint"""
 
     disconnect()
     endpoint_name = api_calls.handle_endpoint_name_or_number(endpoint_name)
