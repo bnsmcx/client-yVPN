@@ -86,5 +86,5 @@ def config_exists(name: str) -> bool:
 
 def wireguard_installed() -> bool:
     """Check to see if wireguard is installed"""
-    sp = subprocess.run(["which", "wireguard"], capture_output=True)
-    return True if sp == 0 else False
+    sp = subprocess.run(["which", "wg"], capture_output=True)
+    return True if sp.returncode == 0 else False
