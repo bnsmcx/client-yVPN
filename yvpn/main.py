@@ -184,6 +184,10 @@ def status():
 
 def main():
     """The entry point into the app."""
+    if not wireguard.wireguard_installed():
+        console.print(
+            "[bold red]Wireguard not found, please install. www.wireguard.com/install/")
+        sys.exit(1)
     app()
 
 

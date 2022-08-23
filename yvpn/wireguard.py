@@ -82,3 +82,9 @@ def configure_client(endpoint_name: str,
 def config_exists(name: str) -> bool:
     interfaces = [x.split("/")[-1] for x in glob("/etc/wireguard/*.conf")]
     return name + ".conf" in interfaces
+
+
+def wireguard_installed() -> bool:
+    """Check to see if wireguard is installed"""
+    sp = subprocess.run(["which", "wireguard"], capture_output=True)
+    return True if sp == 0 else False
