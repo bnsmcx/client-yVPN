@@ -35,3 +35,21 @@ def get_datacenter_regions() -> list:
                            headers=header).json()["available"]
 
     return regions
+
+
+def create_token(funds: int, expiration: int, admin: bool) -> str:
+    """create a new token and return it"""
+    header = {"token": f"{TOKEN}"}
+    request = requests.post(url=f"{SERVER_URL}/tokens",
+            json={"funds": f"{first}",
+                "days_till_expiration": f"{expiration}",
+                "admin": f"{admin}"},
+            headers=header)
+
+    if request.status_code != 200:
+        console.print(request.json())
+        sys.exit(1)
+
+    return request.json()["token"]
+
+
