@@ -25,6 +25,7 @@ def get():
 def delete(token: str):
     """DELETE a token"""
     api_calls.delete_token(token)
+    console.print(f"{token} deleted.")
 
 
 if __name__ == "__main__":

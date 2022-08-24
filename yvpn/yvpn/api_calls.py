@@ -66,3 +66,14 @@ def get_all_tokens() -> list:
 
     token_info = request.json()
     return token_info
+
+
+def delete_token(token: str):
+    """delete a token"""
+    header = {"token": f"{TOKEN}"}
+    request = requests.delete(url=f"{SERVER_URL}/tokens",
+                              params={'token_to_delete': f'{token}'},
+                              headers=header)
+    if request.status_code != 200:
+        console.print(request.json())
+        sys.exit(1)
