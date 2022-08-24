@@ -42,7 +42,7 @@ def create_token(funds: int, expiration: int, admin: bool) -> str:
     """create a new token and return it"""
     header = {"token": f"{TOKEN}"}
     request = requests.post(url=f"{SERVER_URL}/tokens",
-                            json={"funds": f"{first}",
+                            json={"funds": f"{funds}",
                                   "days_till_expiration": f"{expiration}",
                                   "admin": f"{admin}"},
                             headers=header)
