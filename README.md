@@ -75,3 +75,6 @@ Disconnect from the active endpoint.
 
 Display a table of your endpoints with a number, name, location, and creation timestamp.  Also displays your token's balance and expected depletion date at current usage.
 
+### `yvpn admin`
+
+For users with an admin token, create, delete, and get tokens.

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yvpn"
-version = "0.1.1"
+version = "0.2.0"
 description = "Command line tool to manage yvpn endpoints"
 authors = ["Ben Simcox <ben@bnsmcx.com>"]
 readme = "README.md"
