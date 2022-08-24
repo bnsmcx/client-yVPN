@@ -19,7 +19,7 @@ The quickest way to get up and running is to install the tool from pip:
 
 You will need wireguard:
 
-(https://www.wireguard.com/install/)(https://www.wireguard.com/install/)
+https://www.wireguard.com/install/
 
 You need to set two environment variables:
 
