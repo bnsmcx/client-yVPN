@@ -12,6 +12,7 @@ import requests
 import typer
 from rich.table import Table
 
+from yvpn import admin
 from yvpn import util
 from yvpn import api_calls
 from yvpn import wireguard
@@ -20,6 +21,7 @@ from yvpn.config import SERVER_URL, TOKEN, console
 
 app = typer.Typer(no_args_is_help=True,
                   add_completion=False)
+app.add_typer(admin.app, name="admin", help="CREATE and DELETE tokens")
 
 
 @app.command()
