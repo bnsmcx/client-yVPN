@@ -1,9 +1,10 @@
 """
 Functions that make requests to the yvpn server.
 """
+import sys
 
 import requests
-from yvpn.config import TOKEN, SERVER_URL
+from yvpn.config import TOKEN, SERVER_URL, console
 
 
 def get_first_endpoint():
@@ -41,10 +42,10 @@ def create_token(funds: int, expiration: int, admin: bool) -> str:
     """create a new token and return it"""
     header = {"token": f"{TOKEN}"}
     request = requests.post(url=f"{SERVER_URL}/tokens",
-            json={"funds": f"{first}",
-                "days_till_expiration": f"{expiration}",
-                "admin": f"{admin}"},
-            headers=header)
+                            json={"funds": f"{first}",
+                                  "days_till_expiration": f"{expiration}",
+                                  "admin": f"{admin}"},
+                            headers=header)
 
     if request.status_code != 200:
         console.print(request.json())
@@ -53,3 +54,15 @@ def create_token(funds: int, expiration: int, admin: bool) -> str:
     return request.json()["token"]
 
 
+def get_all_tokens() -> list:
+    """get all the tokens and their info"""
+    header = {"token": f"{TOKEN}"}
+    request = requests.get(url=f"{SERVER_URL}/tokens",
+                           headers=header)
+
+    if request.status_code != 200:
+        console.print(request.json())
+        sys.exit(1)
+
+    token_info = request.json()
+    return token_info
